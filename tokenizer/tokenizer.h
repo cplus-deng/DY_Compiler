@@ -20,17 +20,17 @@ class Tokenizer final {
 
   // 状态机的所有状态
   enum DFAState {
-    INITIAL_STATE,
-    UNSIGNED_INTEGER_STATE,
-    PLUS_SIGN_STATE,
-    MINUS_SIGN_STATE,
-    DIVISION_SIGN_STATE,
-    MULTIPLICATION_SIGN_STATE,
-    IDENTIFIER_STATE,
-    EQUAL_SIGN_STATE,
-    SEMICOLON_STATE,
-    LEFTBRACKET_STATE,
-    RIGHTBRACKET_STATE
+    INITIAL_STATE,                  //init
+    UNSIGNED_INTEGER_STATE,         //unsigned int
+    PLUS_SIGN_STATE,                //+
+    MINUS_SIGN_STATE,               //-
+    DIVISION_SIGN_STATE,            // /
+    MULTIPLICATION_SIGN_STATE,      // *
+    IDENTIFIER_STATE,               //标识符
+    EQUAL_SIGN_STATE,               //=
+    SEMICOLON_STATE,                //;
+    LEFTBRACKET_STATE,              //(
+    RIGHTBRACKET_STATE              //)
   };
 
  public:
