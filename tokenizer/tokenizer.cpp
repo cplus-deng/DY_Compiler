@@ -56,7 +56,8 @@ Tokenizer::nextToken() {
       {"begin", TokenType::BEGIN},
       {"var", TokenType::VAR},
       {"print", TokenType::PRINT},
-      {"end", TokenType::END}};
+      {"end", TokenType::END},
+      {"const",TokenType::CONST}};
   while (true) {
     // 读一个字符，请注意auto推导得出的类型是std::optional<char>
     // 这里其实有两种写法
