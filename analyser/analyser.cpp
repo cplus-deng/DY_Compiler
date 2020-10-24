@@ -152,6 +152,7 @@ std::optional<CompilationError> Analyser::analyseVariableDeclaration() {
                                                     ErrorCode::ErrNoSemicolon);
       }
       //将已初始化变量存入符号表 var a=1;
+      //_instructions.emplace_back()
       addVariable(var);
       continue;
     }
@@ -202,11 +203,13 @@ std::optional<CompilationError> Analyser::analyseStatementSequence() {
         // 这里需要你针对不同的预读结果来调用不同的子程序
         // 注意我们没有针对空语句单独声明一个函数，因此可以直接在这里返回
       case TokenType::IDENTIFIER: {
+        unreadToken();
         err = analyseAssignmentStatement();
         if (err.has_value()) return err;
         break;
       }
       case TokenType::PRINT: {
+        unreadToken();
         err = analyseOutputStatement();
         if (err.has_value()) return err;
         break;
@@ -335,6 +338,7 @@ std::optional<CompilationError> Analyser::analyseAssignmentStatement() {
     return std::make_optional<CompilationError>(_current_pos,
                                                 ErrorCode::ErrAssignToConstant);
   }
+  std::string identifier(next.value().GetValueString());
   next = nextToken();
   if (!next.has_value()) {
     return std::make_optional<CompilationError>(_current_pos,
@@ -358,7 +362,7 @@ std::optional<CompilationError> Analyser::analyseAssignmentStatement() {
                                                 ErrorCode::ErrNoSemicolon);
   }
   //_____________________________Assemble________________________________
-
+  _instructions.emplace_back(Operation::STO, getIndex(identifier));
   return {};
 }
 
@@ -449,26 +453,57 @@ std::optional<CompilationError> Analyser::analyseFactor() {
   if (!next.has_value())
     return std::make_optional<CompilationError>(
         _current_pos, ErrorCode::ErrIncompleteExpression);
+  //printf("%s", next.value().GetValueString());
+  //std::cout << next.value().GetValueString() << "\n";
   switch (next.value().GetType()) {
       // 这里和 <语句序列> 类似，需要根据预读结果调用不同的子程序
       // 但是要注意 default 返回的是一个编译错误
     case TokenType::IDENTIFIER: {
+      //std::cout << "1" << "\n";
       if (!isDeclared(next.value().GetValueString())) {
         return std::make_optional<CompilationError>(_current_pos,
                                                     ErrorCode::ErrNotDeclared);
       }
-      if (!isInitializedVariable(next.value().GetValueString())) {
+      if (!isInitializedVariable(next.value().GetValueString()) && !isConstant(next.value().GetValueString())) {
         return std::make_optional<CompilationError>(
             _current_pos, ErrorCode::ErrNotInitialized);
       }
-      _instructions.emplace_back(Operation::LIT, next.value().GetValue());
+        //std::cout << getIndex(next.value().GetValueString()) << " "
+          //  << next.value().GetValueString() << std::endl;
+      //_instructions.emplace_back(Operation::LIT, next.value().GetValue());
+      try {
+        /*
+        _instructions.emplace_back(
+            Operation::LIT, std::any_cast<int32_t>(next.value().GetValue()));
+        */
+        _instructions.emplace_back(Operation::LOD,
+                                   getIndex(next.value().GetValueString()));
+      } catch (const std::exception &) {
+        unreadToken();
+        return std::make_optional<CompilationError>(
+            _current_pos, ErrorCode::ErrIntegerOverflow);
+      }
       break;
     }
     case TokenType::UNSIGNED_INTEGER: {
-      _instructions.emplace_back(Operation::LIT, next.value().GetValue());
+      //std::cout << "2"
+                //<< "\n";
+      //_instructions.emplace_back(Operation::LIT, next.value().GetValue());
+      try {
+        //std::cout << getIndex(next.value().GetValueString()) << " "
+                 // << next.value().GetValueString() << std::endl;
+        _instructions.emplace_back(
+            Operation::LIT, std::any_cast<int32_t>(next.value().GetValue()));
+      } catch (const std::exception &) {
+        unreadToken();
+        return std::make_optional<CompilationError>(
+            _current_pos, ErrorCode::ErrIntegerOverflow);
+      }
       break;
     }
     case TokenType::LEFT_BRACKET: {
+      //std::cout << "3"
+        //        << "\n";
       auto err = analyseExpression();
       if (err.has_value()) {
         return err;
@@ -485,9 +520,12 @@ std::optional<CompilationError> Analyser::analyseFactor() {
       }
       break;
     }
-    default:
+    default: {
+      //std::cout << "4"
+        //        << "\n";
       return std::make_optional<CompilationError>(
           _current_pos, ErrorCode::ErrIncompleteExpression);
+    }
   }
   // 取负
   if (prefix == -1) _instructions.emplace_back(Operation::SUB, 0);
