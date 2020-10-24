@@ -403,7 +403,7 @@ std::optional<CompilationError> Analyser::analyseOutputStatement() {
 std::optional<CompilationError> Analyser::analyseItem() {
   // 可以参考 <表达式> 实现
   auto err = analyseFactor();
-  if (!err.has_value()) {
+  if (err.has_value()) {
     return err;
   }
 
@@ -412,8 +412,10 @@ std::optional<CompilationError> Analyser::analyseItem() {
     if (!next.has_value()) {
       return std::nullopt;
     }
+    std::cout <<"read:  "<< next.value().GetValueString() << std::endl;
     auto type = next.value().GetType();
-    if (type != TokenType::MINUS_SIGN && type != TokenType::DIVISION_SIGN) {
+    if (type != TokenType::MULTIPLICATION_SIGN && type != TokenType::DIVISION_SIGN) {
+      std::cout << "unread:"<<next.value().GetValueString() << std::endl;
       unreadToken();
       return std::nullopt;
     }
@@ -445,21 +447,19 @@ std::optional<CompilationError> Analyser::analyseFactor() {
   else if (next.value().GetType() == TokenType::MINUS_SIGN) {
     prefix = -1;
     _instructions.emplace_back(Operation::LIT, 0);
-  } else
+  } else {
     unreadToken();
+  }
 
   // 预读
   next = nextToken();
   if (!next.has_value())
     return std::make_optional<CompilationError>(
         _current_pos, ErrorCode::ErrIncompleteExpression);
-  //printf("%s", next.value().GetValueString());
-  //std::cout << next.value().GetValueString() << "\n";
   switch (next.value().GetType()) {
       // 这里和 <语句序列> 类似，需要根据预读结果调用不同的子程序
       // 但是要注意 default 返回的是一个编译错误
     case TokenType::IDENTIFIER: {
-      //std::cout << "1" << "\n";
       if (!isDeclared(next.value().GetValueString())) {
         return std::make_optional<CompilationError>(_current_pos,
                                                     ErrorCode::ErrNotDeclared);
@@ -468,14 +468,7 @@ std::optional<CompilationError> Analyser::analyseFactor() {
         return std::make_optional<CompilationError>(
             _current_pos, ErrorCode::ErrNotInitialized);
       }
-        //std::cout << getIndex(next.value().GetValueString()) << " "
-          //  << next.value().GetValueString() << std::endl;
-      //_instructions.emplace_back(Operation::LIT, next.value().GetValue());
       try {
-        /*
-        _instructions.emplace_back(
-            Operation::LIT, std::any_cast<int32_t>(next.value().GetValue()));
-        */
         _instructions.emplace_back(Operation::LOD,
                                    getIndex(next.value().GetValueString()));
       } catch (const std::exception &) {
@@ -486,12 +479,7 @@ std::optional<CompilationError> Analyser::analyseFactor() {
       break;
     }
     case TokenType::UNSIGNED_INTEGER: {
-      //std::cout << "2"
-                //<< "\n";
-      //_instructions.emplace_back(Operation::LIT, next.value().GetValue());
       try {
-        //std::cout << getIndex(next.value().GetValueString()) << " "
-                 // << next.value().GetValueString() << std::endl;
         _instructions.emplace_back(
             Operation::LIT, std::any_cast<int32_t>(next.value().GetValue()));
       } catch (const std::exception &) {
@@ -502,8 +490,6 @@ std::optional<CompilationError> Analyser::analyseFactor() {
       break;
     }
     case TokenType::LEFT_BRACKET: {
-      //std::cout << "3"
-        //        << "\n";
       auto err = analyseExpression();
       if (err.has_value()) {
         return err;
@@ -521,8 +507,6 @@ std::optional<CompilationError> Analyser::analyseFactor() {
       break;
     }
     default: {
-      //std::cout << "4"
-        //        << "\n";
       return std::make_optional<CompilationError>(
           _current_pos, ErrorCode::ErrIncompleteExpression);
     }

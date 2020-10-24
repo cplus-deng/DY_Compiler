@@ -270,7 +270,7 @@ Tokenizer::nextToken() {
         // 请填空：回退，并返回减号token
         unreadLast();
         return std::make_pair(std::make_optional<Token>(TokenType::MINUS_SIGN,
-                                                        '+', pos, currentPos()),
+                                                        '-', pos, currentPos()),
                               std::optional<CompilationError>());
       }
         // =
@@ -286,6 +286,13 @@ Tokenizer::nextToken() {
         return std::make_pair(std::make_optional<Token>(TokenType::MULTIPLICATION_SIGN,
                                                         '*', pos, currentPos()),
                               std::optional<CompilationError>());
+      }
+      case DFAState::DIVISION_SIGN_STATE: {
+        unreadLast();
+        return std::make_pair(
+            std::make_optional<Token>(TokenType::DIVISION_SIGN, '/', pos,
+                                      currentPos()),
+            std::optional<CompilationError>());
       }
       // ;
       case SEMICOLON_STATE: {
